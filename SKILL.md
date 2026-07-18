@@ -41,8 +41,47 @@ questions: [{
 
 | 用户选择 | 处理方式 |
 |---------|---------|
-| **第三方模型** | 继续下面的紧急诊断流程。这个 skill 正是为你的场景设计的。 |
+| **第三方模型** | 继续下面的问题确认（第二步）。 |
 | **Anthropic 官方** | 诚恳告知：本 skill 专门针对第三方模型接入场景，我没有官方模型的 hook 调试经验。建议查 Claude Code 官方文档或社区。诊断结束。 |
+
+### 第零点五步：确认具体症状（第三方模型才走这步）
+
+**模型来源确认后，继续用 `AskUserQuestion` 让用户勾选遇到的问题：**
+
+```
+questions: [{
+  question: "你遇到了什么问题？（可多选，都不是的话在 Other 描述）",
+  header: "问题症状",
+  multiSelect: true,
+  options: [
+    {label: "死循环", description: "反复执行 echo/done/同样的命令，停不下来"},
+    {label: "自主乱改代码", description: "改完不停、自动加注释、自己决定重写文件、做用户没要求的事"},
+    {label: "指令不遵循", description: "说了\"停\"/\"好\"/\"就这样\"还继续，规则不遵守"},
+    {label: "hook 连接错误", description: "反复出现 ECONNREFUSED、hook error、超时等错误消息"},
+    {label: "反复弹窗", description: "task-notifier 或其他通知反复弹出，关不掉"},
+    {label: "settings.json 回滚", description: "改好的 hook 配置过一会又变回去了"}
+  ]
+}]
+```
+
+**根据回答分诊（不预判，根据实际勾选组合输出）：**
+
+| 勾选组合 | 优先排查方向 |
+|---------|-------------|
+| 死循环 | 重点查 hook matcher 是否 `""` + Pre/PostToolUse 是否捕获自身命令 |
+| 自主乱改代码 / 指令不遵循 | 重点查 hook 事件数是否过多 + 是否第三方模型（这是本 skill 专攻的场景） |
+| hook 连接错误 / ECONNREFUSED | 重点查 Hook 指向的端口存活状态 + 是否存在僵尸配置 |
+| 反复弹窗 | 重点查通知类 hook 是否形成 Bash→hook→Bash 闭环 |
+| settings.json 回滚 | 重点查 cc-switch/代理工具持久化存储 + Clawd backup 文件 |
+| 全选 / 多个 | 多源并存的可能性最高——先砍到只剩一个来源再排查 |
+| Other: [用户描述] | 先执行紧急诊断四步，再根据诊断结果分析 |
+
+**如果用户选了"自主乱改代码"或"指令不遵循"：**
+
+额外告知：
+> 这两个症状在第三方模型上是高频问题。根因通常是 hook 碎片注入上下文 → 非 Anthropic 模型未做相关 RLHF → 采样到"主动做事"路径。
+>
+> **最快的验证方式**：临时把 `"hooks": {}` 设为空，用一两天。如果问题消失，就确认是 hook 的锅。之后可以精简到只保留 PermissionRequest + 2-3 个核心事件。
 
 ## 紧急诊断（触发时首先执行）
 
