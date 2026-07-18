@@ -22,17 +22,27 @@ description: >
 
 ## 第零步：确认用户场景（诊断前必须先问）
 
-**在做任何诊断之前，必须先问用户这个问题：**
+**在做任何诊断之前，先用 `AskUserQuestion` 工具弹出确认对话框：**
 
-> 先确认一下——你是在用**第三方模型**（比如 DeepSeek、OpenAI 的模型，通过 cc-switch 或代理接入 Claude Code）吗？
-> 还是用的 **Anthropic 官方模型**？
+调用 `AskUserQuestion`，参数：
+
+```
+questions: [{
+  question: "你在用什么模型接入 Claude Code？",
+  header: "模型来源",
+  options: [
+    {label: "第三方模型", description: "DeepSeek、OpenAI 等，通过 cc-switch 或代理接入"},
+    {label: "Anthropic 官方", description: "直接使用 Anthropic API，没用代理/切换工具"}
+  ]
+}]
+```
 
 **根据回答分流：**
 
-| 用户回答 | 处理方式 |
+| 用户选择 | 处理方式 |
 |---------|---------|
-| **是第三方模型**（DeepSeek/OpenAI/其他 API + 代理/cc-switch） | 继续下面的紧急诊断流程。这个 skill 正是为你的场景设计的——第三方模型 + 第三方 hook 的组合是导致指令不遵循的最常见原因。 |
-| **不是，用的 Anthropic 官方** | 诚恳告知：本 skill 专门针对第三方模型接入场景。**我没有 Anthropic 官方模型的 hook 问题调试经验，建议你查 Claude Code 官方文档、社区论坛、或者向 Anthropic 客服寻求帮助。我不想瞎猜浪费你的时间。**诊断到此结束。 |
+| **第三方模型** | 继续下面的紧急诊断流程。这个 skill 正是为你的场景设计的。 |
+| **Anthropic 官方** | 诚恳告知：本 skill 专门针对第三方模型接入场景，我没有官方模型的 hook 调试经验。建议查 Claude Code 官方文档或社区。诊断结束。 |
 
 ## 紧急诊断（触发时首先执行）
 
