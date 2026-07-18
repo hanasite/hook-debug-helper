@@ -165,7 +165,7 @@ Hook 来源 → 对应端口 → 对应进程 → 用户命名
 >
 > 这个是什么？是你主动安装的吗？
 
-### 第四步：判定
+### 第四步：判定 + 提供解决方案
 
 | 证据 | 结论 |
 |------|------|
@@ -174,6 +174,37 @@ Hook 来源 → 对应端口 → 对应进程 → 用户命名
 | Hook 源不是用户主动安装的 | 可能是某个项目的 CLAUDE.md 自动部署的 |
 | 事件数 > 10 + 用户说"抽风/乱改" | hook 过多，碎片化影响指令遵循 |
 | 用户不认得的 hook 来源 | **立即建议删除** |
+
+**无论判定结果如何，修复前必须用 `AskUserQuestion` 让用户选择方案：**
+
+```
+questions: [{
+  question: "你想怎么修？",
+  header: "修复方案",
+  options: [
+    {label: "临时禁用 (推荐先试)", description: "设 hooks 为空，验证问题是否消失。安全，随时可恢复。备份存到 ~/.claude/settings.json.bak"},
+    {label: "彻底修复", description: "直接清理问题 hook 和所有备份/持久化存储。不可逆。修复前也会先备份到 ~/.claude/settings.json.bak"},
+    {label: "只备份不动", description: "先备份当前配置到 ~/.claude/settings.json.bak，等我确认后再动手"}
+  ]
+}]
+```
+
+**不管选哪种，执行前必须先备份：**
+
+```bash
+cp ~/.claude/settings.json ~/.claude/settings.json.bak && echo "备份完成: ~/.claude/settings.json.bak"
+```
+
+**然后告诉用户备份位置：**
+> 当前配置已备份到 `~/.claude/settings.json.bak`。如需恢复：`cp ~/.claude/settings.json.bak ~/.claude/settings.json`
+
+**三种方案的具体操作：**
+
+| 方案 | 操作 | 后续 |
+|------|------|------|
+| **临时禁用** | 设 `"hooks": {}` | 用一两天，如果问题消失就确认是 hook 的锅。之后可精简到只保留 PermissionRequest + 2-3 个核心事件。 |
+| **彻底修复** | 1. 关掉三方工具 2. 删 backup 3. 修 cc-switch/代理持久化存储 4. 修 settings.json 5. 全量确认 6. 只开一个工具 | 永久解决，但不可逆。 |
+| **只备份不动** | 仅执行 `cp` 备份 | 用户自己决定后续时机。
 
 ### 如果判断需要停止当前对话
 
