@@ -1,11 +1,12 @@
 ---
 name: hook-debug-helper
 description: >
-  Claude Code hook 问题通用排查工具。诊断：hook 死循环、hook 回滚、hook 指令不遵循。
+  Claude Code 接入第三方模型时的 hook 问题排查工具。专门针对非 Anthropic 模型（DeepSeek、OpenAI 等）
+  通过代理/cc-switch 接入 Claude Code 时出现的：hook 死循环、hook 回滚、hook 指令不遵循。
   **紧急触发**：用户描述 死循环/抽风/自主乱改/指令不遵循/越权决策/改完不停/自己做主 时，
-  立即加载此 skill 并执行紧急诊断流程（读取 settings.json → 提取未知 hook 来源 → 扫描后台可疑进程 →
-  交叉对比并询问用户每个可疑来源是什么）。
-  如果发现多个第三方 hook 同时生效，停止当前对话，告诉用户关掉三方工具并重启 Claude Code。
+  立即加载此 skill。
+  第一步先询问用户是否使用第三方模型——如果是，执行诊断流程；如果不是，说明本 skill 专为
+  第三方模型场景设计，建议另寻方法。
   触发词：死循环、抽风、不遵循指令、自主乱改、乱改代码、越权、自作主张、hook、
   ECONNREFUSED、settings.json 被覆盖、echo 循环。
 ---
@@ -18,6 +19,20 @@ description: >
 1. Read 确认当前内容 → Edit 精确替换 → 一次只改一个逻辑点
 2. 改完后运行 `python3 scripts/check-cc-switch.py` 验证脚本未损坏
 3. 验证无误才算完工——决不猜测
+
+## 第零步：确认用户场景（诊断前必须先问）
+
+**在做任何诊断之前，必须先问用户这个问题：**
+
+> 先确认一下——你是在用**第三方模型**（比如 DeepSeek、OpenAI 的模型，通过 cc-switch 或代理接入 Claude Code）吗？
+> 还是用的 **Anthropic 官方模型**？
+
+**根据回答分流：**
+
+| 用户回答 | 处理方式 |
+|---------|---------|
+| **是第三方模型**（DeepSeek/OpenAI/其他 API + 代理/cc-switch） | 继续下面的紧急诊断流程。这个 skill 正是为你的场景设计的——第三方模型 + 第三方 hook 的组合是导致指令不遵循的最常见原因。 |
+| **不是，用的 Anthropic 官方** | 诚恳告知：本 skill 专门针对第三方模型接入场景。**我没有 Anthropic 官方模型的 hook 问题调试经验，建议你查 Claude Code 官方文档、社区论坛、或者向 Anthropic 客服寻求帮助。我不想瞎猜浪费你的时间。**诊断到此结束。 |
 
 ## 紧急诊断（触发时首先执行）
 
